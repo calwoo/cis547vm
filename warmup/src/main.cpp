@@ -1,20 +1,23 @@
+#include "Task.h"
+#include "User.h"
+
 #include <iostream>
-#include <vector>
 #include <map>
 #include <set>
 #include <string>
-
-#include "User.h"
-#include "Task.h"
+#include <vector>
 
 /**
  * Check if `user` exists in the map. If so, add `task` to the set of tasks for that user.
  * Otherwise, add a new entry for the user and a singleton set containing `task`.
  */
 void addTask(std::map<User*, std::set<Task*>>& userTasks, User* user, Task* task) {
-    /**
-     * TODO: Enter your code here
-     */
+  if (userTasks.find(user) != userTasks.end()) {
+    userTasks[user].insert(task);
+  } else {
+    std::set<Task*> singleton{task};
+    userTasks[user] = singleton;
+  }
 }
 
 /**
@@ -38,14 +41,25 @@ void addTask(std::map<User*, std::set<Task*>>& userTasks, User* user, Task* task
  * use the `auto` keyword wherever possible
  */
 void printUsersAndTasks(std::map<User*, std::set<Task*>> userTasks) {
-    std::cout << "Printing out users and their tasks:\n";
-    std::cout << "---------------------------------\n";
+  std::cout << "Printing out users and their tasks:\n";
+  std::cout << "---------------------------------\n";
 
-    /**
-     * TODO: Enter your code here
-     */
+  for (auto [user, tasks] : userTasks) {
+    std::cout << "User: " << user->getName() << " (" << user->getEmail()
+              << "):" << std::endl;
+    for (auto task : tasks) {
+      if (auto* ptr = dynamic_cast<Bill*>(task)) {
+        std::cout << "- " << ptr->getDescription() << " of $" << ptr->getAmount()
+                  << " to be paid to " << ptr->getPayee() << " by "
+                  << monthToString(ptr->getDeadline()) << std::endl;
+      } else if (auto* ptr = dynamic_cast<Misc*>(task)) {
+        std::cout << "- " << ptr->getDescription() << std::endl;
+      }
+    }
+    std::cout << std::endl;
+  }
 
-    std::cout << "=================================\n\n";
+  std::cout << "=================================\n\n";
 }
 
 /**
@@ -65,9 +79,9 @@ void printUsersAndTasks(std::map<User*, std::set<Task*>> userTasks) {
  * use the `auto` keyword wherever possible
  */
 void printTasksDue(std::map<User*, std::set<Task*>> userTasks, Month due) {
-    std::cout << "Tasks due in " << monthToString(due) << ":\n";
+  std::cout << "Tasks due in " << monthToString(due) << ":\n";
 
-    /**
+  /**
      * TODO: Enter your code here
      */
 }
@@ -75,67 +89,75 @@ void printTasksDue(std::map<User*, std::set<Task*>> userTasks, Month due) {
 /**
  * Define mapEquality to determine if the two user-task maps are equal or not.
  */
-bool mapEquality(std::map<User*, std::set<Task*>> userTasksA, std::map<User*, std::set<Task*>> userTasksB) {
-    /**
+bool mapEquality(std::map<User*, std::set<Task*>> userTasksA,
+    std::map<User*, std::set<Task*>> userTasksB) {
+  /**
      * TODO: Enter your code here
      *
      * Returns `false` by default to prevent Illegal Instruction errors. Change this when defining the function.
      */
 
-    return false;
+  return false;
 }
 
 int main() {
-    User* user1;
-    User* user2;
-    std::vector<User*> users;
+  User* user1;
+  User* user2;
+  std::vector<User*> users;
 
-    /**
+  /**
      * Using the `new` keyword
      * Initialize `user1` to have ID 1132, Name "A. Smith", Email "smith@gmail.com"
      * Initialize `user2` to have ID 1857, Name "J. Doe", Email "doe@outlook.com"
-     *
-     * TODO: Enter your code here
      */
 
-    std::map<User*, std::set<Task*>> userTasks;
+  user1 = new User("A. Smith", "smith@gmail.com", 1132);
+  user2 = new User("J. Doe", "doe@outlook.com", 1857);
 
-    /**
+  std::map<User*, std::set<Task*>> userTasks;
+
+  /**
      * Define the `addTask` function and use it to add the following to the `userTasks` map:
      * 1. A task of type `Misc` with ID 112 and description "Do Laundry" for "A. Smith"
      * 2. A task of type `Bill` with ID 113, description "Electricity", amount 21.94, payee "PECO" due in Aug for "A. Smith"
      * 3. A task of type `Misc` with ID 141 and description "Get Groceries" for "J. Doe"
      * 4. A task of type `Bill` with ID 144, description "Phone", amount 40, payee "MobiComm" due in Oct for "J. Doe"
-     *
-     * TODO: Enter your code here
      */
 
-    // Making a copy of `userTasks`
-    auto userTasksCopy = userTasks;
+  addTask(userTasks, user1, new Misc("Do Laundry", 112));
+  addTask(userTasks, user1, new Bill("Electricity", 113, 21.94, "PECO", Aug));
+  addTask(userTasks, user2, new Misc("Get Groceries", 141));
+  addTask(userTasks, user2, new Bill("Phone", 144, 40, "MobiComm", Oct));
 
-    // Define the `printUsersAndTasks` function. The following line will print the map once the function is defined
-    printUsersAndTasks(userTasks);
+  // Making a copy of `userTasks`
+  auto userTasksCopy = userTasks;
 
-    // Define the `printTasksDue` function. The following line will print all the tasks due in `Aug` and their corresponding users
-    printTasksDue(userTasks, Aug);
+  // Define the `printUsersAndTasks` function. The following line will print the map once the function is defined
+  printUsersAndTasks(userTasks);
 
-    /**
+  // Define the `printTasksDue` function. The following line will print all the tasks due in `Aug` and their corresponding users
+  printTasksDue(userTasks, Aug);
+
+  /**
      * Remove `user2` from the map
-     *
-     * TODO: Enter your code here
      */
 
-    // printing all users and tasks again to verify that `user2` is removed using the printUsersAndTasks function
-    printUsersAndTasks(userTasks);
+  auto it = userTasks.find(user2);
+  if (it != userTasks.end()) {
+    userTasks.erase(it);
+  }
 
-    // Define the `mapEquality` function. This will be used to check if removing `user2` affected `userTasksCopy`
-    if(mapEquality(userTasksCopy, userTasks)) {
-        std::cout << "Copy remains equal to the original\n";
-    } else {
-        std::cout << "Copy is no longer equal to the original\n";
-    }
+  // printing all users and tasks again to verify that `user2` is removed using the printUsersAndTasks function
+  printUsersAndTasks(userTasks);
 
-    return 0;
+  // Define the `mapEquality` function. This will be used to check if removing `user2` affected `userTasksCopy`
+  if (mapEquality(userTasksCopy, userTasks)) {
+    std::cout << "Copy remains equal to the original\n";
+  } else {
+    std::cout << "Copy is no longer equal to the original\n";
+  }
+
+  return 0;
 }
 
 /*
