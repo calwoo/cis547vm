@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-int main() {
-  // TODO: Fill in the code here
+int main()
+{
   int a = getchar();
   int b = -5;
   int c = (a != b);
