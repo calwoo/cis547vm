@@ -52,8 +52,15 @@ void BuildDictionaryPass::extractFromGlobalVariable(GlobalVariable *GV) {
 void BuildDictionaryPass::extractFromConstant(Constant *C) {
   if (ConstantDataArray *CDA = dyn_cast<ConstantDataArray>(C)) {
     // TODO: Extract string constants and call `addToDictionary`
+    if (CDA->isString()) {
+      StringRef s = CDA->getAsString();
+      std::string str = s.str();
+      addToDictionary(str);
+    }
   } else if (ConstantInt *CI = dyn_cast<ConstantInt>(C)) {
     // TODO: Extract integer constants and call `addToDictionary`
+    int64_t intval = CI->getSExtValue();
+    addToDictionary(std::to_string(intval));
   }
 }
 

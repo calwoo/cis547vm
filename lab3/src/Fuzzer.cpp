@@ -21,6 +21,7 @@
 #include <string>
 #include <time.h>
 #include <unistd.h>
+#include <algorithm>
 
 #define ARG_EXIST_CHECK(Name, Arg)                                                       \
   {                                                                                      \
@@ -101,8 +102,7 @@ int StrategyState = 0;
  * @return Pointer to a string.
  */
 std::string selectInput(RunInfo Info) {
-  int Index = 0;
-
+  int Index = rand() % SeedInputs.size();
   return SeedInputs[Index];
 }
 
@@ -156,16 +156,64 @@ std::string mutationB(std::string Original) {
 std::set<std::pair<std::string, int>> FuzzingDict;
 
 std::string mutationDictDeterministic(std::string Original) {
-  // TODO: Insert/overwrite entries at multiple indices
+  if (FuzzingDict.empty() || Original.empty()) {
+    return Original;
+  }
 
-  return Original;
+  int dictSize = FuzzingDict.size();
+  int dictIndex = MutationState % dictSize;
+
+  // pick the dictionary entry at dictIndex
+  auto it = FuzzingDict.begin();
+  std::advance(it, dictIndex);
+  std::string dictValue = it->first;
+  int positionHint = it->second;
+
+  // determine position: use hint if valid, otherwise cycle through positions
+  int position;
+  if (positionHint != INT_MAX && positionHint < (int)Original.length()) {
+    position = positionHint;
+  } else {
+    position = (MutationState / dictSize) % Original.length();
+  }
+
+  // overwrite at the position
+  std::string Result = Original;
+  for (size_t i = 0; i < dictValue.length() && (position + i) < Result.length(); ++i) {
+    Result[position + i] = dictValue[i];
+  }
+
+  MutationState++;
+  return Result;
 }
 
 std::string mutationDictRandom(std::string Original) {
-  // TODO: Implement a mutation that randomly:
-  // - inserts a dictionary entry into `Original`, or
-  // - overwrites some of `Original` with a dictionary entry
-  return Original;
+  if (FuzzingDict.empty() || Original.empty()) {
+    return Original;
+  }
+
+  // pick random entry from fuzzing dict by position
+  int dictIndex = rand() % FuzzingDict.size();
+  auto it = FuzzingDict.begin();
+  std::advance(it, dictIndex);
+  std::string dictValue = it->first;
+
+  // pick a random position in the string
+  int position = rand() % Original.length();
+
+  // randomly decide: insert or overwrite
+  std::string Result = Original;
+  if (rand() % 2 == 0) {
+    // insert the dictionary value at the position
+    Result.insert(position, dictValue);
+  } else {
+    // overwrite starting at the position
+    for (size_t i = 0; i < dictValue.length() && (position + i) < Result.length(); ++i) {
+      Result[position + i] = dictValue[i];
+    }
+  }
+
+  return Result;
 }
 
 /**
@@ -178,6 +226,8 @@ std::string mutationDictRandom(std::string Original) {
 std::vector<MutationFn *> MutationFns = {
     mutationA,
     mutationB,
+    mutationDictDeterministic,
+    mutationDictRandom,
 };
 
 /**
@@ -226,7 +276,25 @@ void feedBack(std::string &Target, RunInfo &Info) {
    * CoverageState to make it available in the next call to feedback.
    */
   CoverageState.assign(RawCoverageData.begin(),
-      RawCoverageData.end());  // No extra processing
+      RawCoverageData.end());
+
+  if (!Info.Passed) {
+    SeedInputs.push_back(Info.MutatedInput);
+    return;
+  }
+
+  bool found_new_coverage = false;
+  for (auto& coverage : CoverageState) {
+    if (std::find(PrevCoverageState.begin(), PrevCoverageState.end(), coverage) == PrevCoverageState.end()) {
+      found_new_coverage = true;
+      break;
+    }
+  }
+
+  if (found_new_coverage) {
+    SeedInputs.push_back(Info.MutatedInput);
+    return;
+  }
 }
 
 int Freq = 1000;
